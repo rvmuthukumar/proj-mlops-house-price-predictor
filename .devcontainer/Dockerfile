@@ -12,13 +12,7 @@ RUN apt-get update \
      build-essential \
   && rm -rf /var/lib/apt/lists/*
 
-# Install UV package manager
-RUN curl -LsSf https://astral.sh/uv/install.sh | sh
-
-# Ensure UV is in PATH
-ENV PATH="/root/.cargo/bin:$PATH"
-
-# Create non-root user for dev container
+# Create non-root user for dev container first
 ARG USERNAME=vscode
 ARG USER_UID=1000
 ARG USER_GID=$USER_UID
@@ -31,11 +25,16 @@ RUN groupadd --gid $USER_GID $USERNAME \
   && chmod 0440 /etc/sudoers.d/$USERNAME \
   && rm -rf /var/lib/apt/lists/*
 
-# Set up UV for non-root user
-USER $USERNAME
+# Install UV package manager globally using official installer
+RUN curl -LsSf https://astral.sh/uv/install.sh | sh \
+  && cp /root/.local/bin/uv /usr/local/bin/uv \
+  && chmod +x /usr/local/bin/uv \
+  && uv --version
+
+# Set working directory
 WORKDIR /workspace
 
-# Initialize UV for the user
-RUN /root/.cargo/bin/uv --version
+# Verify all installations
+RUN uv --version && git --version && python --version
 
 SHELL ["/bin/bash", "-c"]
